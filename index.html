@@ -41,30 +41,115 @@ footer{padding:26px 22px;background:#0b1d38;color:#dce6f5;text-align:center;font
 <section><div class="wrap"><h2 class="section-title">About the creator</h2><p><b>Created by ER. V. ABHISHEK, B.E., R.E. III</b><br>ARULJOTHI</p><p class="note">Educational reference only. Project-specific structural design, statutory approval and site decisions must be made by qualified professionals using the latest applicable codes and approved project drawings.</p></div></section>
 <footer>© <span id="year"></span> ARULJOTHI · Digital product store<br><a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms & Refunds</a> · Support: <span>ADD-YOUR-SUPPORT-EMAIL</span></footer>
 <script>
-document.getElementById("year").textContent=new Date().getFullYear();
-const form=document.getElementById("checkout-form"),btn=document.getElementById("pay"),statusBox=document.getElementById("status");
-function show(msg,kind){statusBox.className=kind||"";statusBox.textContent=msg;}
-form.addEventListener("submit",async e=>{
- e.preventDefault(); btn.disabled=true; show("Creating secure payment access…");
- try{
-  const customer={name:document.getElementById("name").value.trim(),email:document.getElementById("email").value.trim(),phone:document.getElementById("phone").value.trim()};
-  const orderRes=await fetch("https://aruljothi-building-manual.onrender.com/api/create-order",{ {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(customer)});
-  const order=await orderRes.json(); if(!orderRes.ok) throw new Error(order.error||"Could not create payment order.");
-  const options={key:order.keyId,amount:order.amount,currency:order.currency,name:"ARULJOTHI",description:"A to Z Building Construction Manual PDF",order_id:order.orderId,prefill:order.customer,theme:{color:"#173f82"},
-   handler:async function(response){
-    show("Verifying payment securely with Razorpay…");
-    try{
-     const vr=await fetch("https://aruljothi-building-manual.onrender.com/api/verify-payment",{ {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(response)});
-     const result=await vr.json(); if(!vr.ok||!result.verified) throw new Error(result.error||"Payment verification failed.");
-     show("Payment verified. Your download is ready.", "success");
-     const a=document.createElement("a");a.href=result.downloadUrl;a.textContent="Download your PDF";a.className="btn";a.style.display="block";a.style.textAlign="center";a.style.textDecoration="none";a.style.marginTop="12px";statusBox.appendChild(document.createElement("br"));statusBox.appendChild(a);
-    }catch(err){show(err.message+" Please contact support with your Razorpay payment ID: "+(response.razorpay_payment_id||"not available"),"error");}
-    finally{btn.disabled=false;}
-   },
-   modal:{ondismiss:function(){show("Payment window closed. No download has been issued.");btn.disabled=false;}}
-  };
-  const checkout=new Razorpay(options); checkout.on("payment.failed",function(resp){show("Payment failed: "+(resp.error.description||"Please try again."),"error");btn.disabled=false;}); checkout.open();
- }catch(err){show(err.message,"error");btn.disabled=false;}
+document.getElementById("year").textContent = new Date().getFullYear();
+
+const form = document.getElementById("checkout-form");
+const btn = document.getElementById("pay");
+const statusBox = document.getElementById("status");
+
+const BACKEND = "https://aruljothi-building-manual.onrender.com";
+
+function show(message, type = "") {
+    statusBox.className = type;
+    statusBox.textContent = message;
+}
+
+form.addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    btn.disabled = true;
+    show("Creating secure payment access...");
+
+    try {
+        const customer = {
+            name: document.getElementById("name").value.trim(),
+            email: document.getElementById("email").value.trim(),
+            phone: document.getElementById("phone").value.trim()
+        };
+
+        const orderRes = await fetch(BACKEND + "/api/create-order", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(customer)
+        });
+
+        const order = await orderRes.json();
+
+        if (!orderRes.ok) {
+            throw new Error(order.error || "Unable to create order.");
+        }
+
+        const options = {
+            key: order.keyId,
+            amount: order.amount,
+            currency: order.currency,
+            name: "ARULJOTHI",
+            description: "A to Z Building Construction Manual",
+            order_id: order.orderId,
+
+            handler: async function(response) {
+                show("Verifying payment securely with Razorpay...");
+
+                try {
+                    const vr = await fetch(BACKEND + "/api/verify-payment", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify(response)
+                    });
+
+                    const result = await vr.json();
+
+                    if (!vr.ok || !result.verified) {
+                        throw new Error(result.error || "Payment verification failed.");
+                    }
+
+                    show("Payment verified! Your PDF is ready.", "success");
+
+                    const link = document.createElement("a");
+                    link.href = new URL(result.downloadUrl, BACKEND).href;
+                    link.textContent = "DOWNLOAD YOUR PDF";
+                    link.className = "btn";
+                    link.style.display = "block";
+                    link.style.textAlign = "center";
+                    link.style.marginTop = "15px";
+
+                    statusBox.appendChild(link);
+
+                } catch (err) {
+                    show(err.message, "error");
+                } finally {
+                    btn.disabled = false;
+                }
+            },
+
+            modal: {
+                ondismiss: function() {
+                    show("Payment cancelled. You can try again.", "error");
+                    btn.disabled = false;
+                }
+            },
+
+            theme: {
+                color: "#173f82"
+            }
+        };
+
+        const checkout = new Razorpay(options);
+
+        checkout.on("payment.failed", function(response) {
+            show(
+                response.error.description || "Payment failed. Please try again.",
+                "error"
+            );
+            btn.disabled = false;
+        });
+
+        checkout.open();
+
+    } catch (err) {
+        show(err.message || "Something went wrong. Please try again.", "error");
+        btn.disabled = false;
+    }
 });
 </script>
 </body></html>
