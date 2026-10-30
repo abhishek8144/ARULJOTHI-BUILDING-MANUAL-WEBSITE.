@@ -48,13 +48,13 @@ form.addEventListener("submit",async e=>{
  e.preventDefault(); btn.disabled=true; show("Creating secure payment access…");
  try{
   const customer={name:document.getElementById("name").value.trim(),email:document.getElementById("email").value.trim(),phone:document.getElementById("phone").value.trim()};
-  const orderRes=await fetch("/api/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(customer)});
+  const orderRes=await fetch("https://aruljothi-building-manual.onrender.com/api/create-order",{ {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(customer)});
   const order=await orderRes.json(); if(!orderRes.ok) throw new Error(order.error||"Could not create payment order.");
   const options={key:order.keyId,amount:order.amount,currency:order.currency,name:"ARULJOTHI",description:"A to Z Building Construction Manual PDF",order_id:order.orderId,prefill:order.customer,theme:{color:"#173f82"},
    handler:async function(response){
     show("Verifying payment securely with Razorpay…");
     try{
-     const vr=await fetch("/api/verify-payment",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(response)});
+     const vr=await fetch("https://aruljothi-building-manual.onrender.com/api/verify-payment",{ {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(response)});
      const result=await vr.json(); if(!vr.ok||!result.verified) throw new Error(result.error||"Payment verification failed.");
      show("Payment verified. Your download is ready.", "success");
      const a=document.createElement("a");a.href=result.downloadUrl;a.textContent="Download your PDF";a.className="btn";a.style.display="block";a.style.textAlign="center";a.style.textDecoration="none";a.style.marginTop="12px";statusBox.appendChild(document.createElement("br"));statusBox.appendChild(a);
